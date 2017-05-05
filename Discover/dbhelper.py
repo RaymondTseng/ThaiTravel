@@ -8,7 +8,7 @@ import math
 logger = logging.getLogger('mylogger')
 class DBHelper:
     def __init__(self):
-        self.conn = MySQLdb.connect('localhost', 'root', '0719', 'ThaiTravel',
+        self.conn = MySQLdb.connect('localhost', 'root', '0719', 'NewThaiTravel',
                                cursorclass = MySQLdb.cursors.DictCursor,
                                charset = 'utf8mb4')
         self.cur = self.conn.cursor()
@@ -39,11 +39,24 @@ class DBHelper:
             new_content = []
             for t in temp:
                 tt = eval(str(t))
+                if tt['node'] == 'node':
+                    if tt.has_key('score'):
+                        tt['score'] = tt['score'].replace('我的评价:', '')
                 new_content.append(tt)
             # new_content = json.dumps(new_content)
             result['content'] = new_content
             return json.dumps(result)
         return None
 
+    def search_note(self, search_word):
+        sql = "select id,title,author,time,picture from chi_travel_notes where title like '%" + search_word + "%' limit 32"
+        self.cur.execute(sql)
+        results = self.cur.fetchall()
+
+        return results
+
+
+
     def close(self):
         self.conn.close()
+

@@ -8,8 +8,8 @@ import json
 import logging
 logger = logging.getLogger('mylogger')
 
-appid = '20161119000032190'
-secretKey = 'DZHf9Aq9ggWqHaYT7e_w'
+appid = '20170502000046127'
+secretKey = 'tFI2_ctH0ifQb5_qex6r'
 
 httpClient = None
 myurl = '/api/trans/vip/translate'
@@ -19,13 +19,15 @@ salt = random.randint(32768, 65536)
 
 
 def translate(word):
-    sign = appid + word + str(salt) + secretKey
+    logger.info(word)
+    sign = (appid + word + str(salt) + secretKey).encode('utf8')
     m1 = md5.new()
     m1.update(sign)
     sign = m1.hexdigest()
-    url = myurl + '?appid=' + appid + '&q=' + urllib.quote(
-        word) + '&from=' + fromLang + '&to=' + toLang + '&salt=' + str(
-        salt) + '&sign=' + sign
+    url = myurl + u'?appid=' + appid + u'&q=' + urllib.quote(str(word)) \
+          + u'&from=' + fromLang + u'&to=' + toLang + u'&salt=' + \
+          str(salt) + u'&sign=' + sign
+    logger.info(url)
     try:
         httpClient = httplib.HTTPConnection('api.fanyi.baidu.com')
         httpClient.request('GET', url)
@@ -36,9 +38,7 @@ def translate(word):
         dst = trans_result['dst']
         return dst
     except Exception, e:
-        print e
+        print e.message
     finally:
         if httpClient:
             httpClient.close()
-
-# translate('apple')

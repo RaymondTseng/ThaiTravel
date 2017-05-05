@@ -4,11 +4,12 @@ import logging
 import MySQLdb
 import MySQLdb.cursors
 import json
+import numpy as np
 import translate
 logger = logging.getLogger('mylogger')
 class DBHelper:
     def __init__(self):
-        self.conn = MySQLdb.connect('localhost', 'root', '0719', 'ThaiTravel',
+        self.conn = MySQLdb.connect('localhost', 'root', '0719', 'NewThaiTravel',
                                cursorclass = MySQLdb.cursors.DictCursor,
                                charset = 'utf8mb4')
         self.cur = self.conn.cursor()
@@ -72,9 +73,12 @@ class DBHelper:
         result['eng_score'] = scores[1]
         result['thai_score'] = scores[2]
         result['total_score'] = float(total_score) / count
+        if result['introduction'] != '暂无简介':
+            result['description'] = result['introduction'][:50]
         del result['score']
         del result['indices']
         result['comments_num'] = self.get_scene_comment_num(scene_name)
+        result['tag'] = self.get_small_scene_tag(scene_name)
         return result
 
     def get_scene_comment_num(self, chi_scene_name):
@@ -88,12 +92,15 @@ class DBHelper:
         if not result[0]['thai_location'] == 'null':
             scene_names['thai_scene'] = result[0]['thai_location']
         num = 0
+        logger.info(scene_names)
         for key,value in scene_names.iteritems():
             sql = 'select indices from %s where scene_name = %s' % (key, '"' + value + '"')
             self.cur.execute(sql)
-            result = self.cur.fetchall()[0]
-            temp = result['indices'].split(',')
-            num += int(len(temp))
+            result = self.cur.fetchall()
+            if result:
+                result = result[0]
+                temp = result['indices'].split(',')
+                num += int(len(temp))
         return num
     '''
     获取大景点内容
@@ -104,6 +111,59 @@ class DBHelper:
         temp_result = self.cur.fetchall()
         result = temp_result[0]
         result['recommend_scene'] = self.get_recommend_scene_list(scene_name)
+        return result
+
+    def get_small_scene_tag(self, scene_name):
+        sql = 'select * from location_set where chi_location=%s' % '"' + scene_name + '"'
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
+        scene_names = {}
+        scene_names['chi'] = scene_name
+        if not result[0]['eng_location'] == 'null':
+            scene_names['eng'] = result[0]['eng_location']
+        if not result[0]['thai_location'] == 'null':
+            scene_names['thai'] = result[0]['thai_location']
+        sentiment = {}
+        top_words = {}
+        n_words = {}
+        for key, value in scene_names.iteritems():
+            table = key + '_scene'
+            sql = 'select tag from %s where scene_name=%s' % (table, "'" + value + "'")
+            self.cur.execute(sql)
+            result = self.cur.fetchall()
+            if result:
+                tag_dict = eval(str(result[0]['tag']))
+                if tag_dict:
+                    if tag_dict.has_key('top4'):
+                        sum = np.array([int(str(v)) for v in tag_dict['top4'].values()]).sum()
+                        for word, count in tag_dict['top4'].iteritems():
+                            if isinstance(word,str):
+                                word = word.decode('unicode-escape')
+                            top_words[word] = int(str(count)) / float(sum)
+                    if tag_dict.has_key('nnn'):
+                        n_words[key] = tag_dict['nnn']
+            table = key + '_sentiment_score'
+            sql = 'select score from %s where location=%s' % (table, '"' + value + '"')
+            self.cur.execute(sql)
+            result = self.cur.fetchall()
+            if result:
+                sentiment[key] = {}
+                sentiment_words = json.loads(str(result[0]['score']))
+                colors = []
+                data = []
+                for word, count in n_words[key].iteritems():
+                    temp = {}
+                    word = word.decode("unicode-escape")
+                    if sentiment_words.has_key(word):
+                        temp['name'] = word
+                        temp['value'] = count
+                        colors.append(sentiment_words[word])
+                        data.append(temp)
+                sentiment[key]['data'] = data
+                sentiment[key]['color'] = colors
+        result = {}
+        result['pie'] = sentiment
+        result['bar'] = top_words
         return result
 
     '''
@@ -150,7 +210,7 @@ class DBHelper:
     '''
     计算用户等级
     '''
-    def compute_user_level(self, line):
+    def compute_user_level(self, line, index):
         user_level = 0
         if line['user_level']:
             user_level = int(line['user_level'])
@@ -172,7 +232,8 @@ class DBHelper:
             line['user_label'] = u'旅游达人'
         else:
             line['user_label'] = u'旅游小白'
-        return json.dumps(line)
+        line['index'] = index
+        return line
 
     '''
     获取某个景点的某条评论
@@ -241,17 +302,20 @@ class DBHelper:
                     indices.append(int(i))
         result_set = []
         sql = 'select user_name, head, content, title, user_level, comment_counts' \
-              ', scene_comment_counts, agree_counts from %s where id = %s'
-        last = len(indices) if (index + 5) > len(indices) else (index + 5)
+              ', scene_comment_counts, agree_counts, score from %s where id = %s'
+        start = index * 5
+        last = len(indices) if (start + 5) > len(indices) else (start + 5)
         if index == -1:
-            index = 0
+            start = 0
             last = len(indices)
-        for i in indices[index:last]:
+        count = start
+        for i in indices[start:last]:
             if i:
                 self.cur.execute(sql % ( lang+"_comments",int(i)))
                 result = self.cur.fetchall()
                 if result:
-                    result_set.append(self.compute_user_level(result[0]))
+                    result_set.append(self.compute_user_level(result[0], count))
+                    count += 1
 
         if last == len(indices):
             sql = 'select url from %s where id = %s'
@@ -262,6 +326,7 @@ class DBHelper:
                 logger.info(result[0])
                 result_dict['url'] = result[0]
         result_dict['comments'] = result_set
+        result_dict['max_comments_num'] = len(indices)
         return result_dict
 
 
@@ -304,5 +369,5 @@ class DBHelper:
     def close(self):
         self.conn.close()
 
-# db = DBHelper()
-# print db.get_scene_comment_num(u'皇陵')
+db = DBHelper()
+print db.get_small_scene_tag(u'白金时尚购物中心')
