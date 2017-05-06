@@ -8,8 +8,8 @@ import json
 import logging
 logger = logging.getLogger('mylogger')
 
-appid = '20170502000046127'
-secretKey = 'tFI2_ctH0ifQb5_qex6r'
+appid = '20170504000046408'
+secretKey = 'KHOCq9HrtMKmDPL0N0uk'
 
 httpClient = None
 myurl = '/api/trans/vip/translate'
@@ -27,7 +27,6 @@ def translate(word):
     url = myurl + u'?appid=' + appid + u'&q=' + urllib.quote(str(word)) \
           + u'&from=' + fromLang + u'&to=' + toLang + u'&salt=' + \
           str(salt) + u'&sign=' + sign
-    logger.info(url)
     try:
         httpClient = httplib.HTTPConnection('api.fanyi.baidu.com')
         httpClient.request('GET', url)
@@ -35,6 +34,7 @@ def translate(word):
         # response是HTTPResponse对象
         response = httpClient.getresponse()
         trans_result = json.loads(response.read())['trans_result'][0]
+        logger.info(trans_result)
         dst = trans_result['dst']
         return dst
     except Exception, e:

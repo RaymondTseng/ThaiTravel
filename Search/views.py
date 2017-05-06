@@ -30,7 +30,6 @@ def home(request):
                 content['piciture'] = None if result['picture'] == None else result['picture'].split(';')[0]
                 content['scene_name'] = result['scene_name']
                 scores = db.get_score(result['scene_name'])
-                logger.info(scores['score'])
                 scores = scores['score'].split(',')
                 content['chi_score'] = scores[0] if scores[0] else 0
                 content['eng_score'] = scores[1] if scores[1] else 0
@@ -39,6 +38,7 @@ def home(request):
             result_dict['hot_location'] = hot_locations
             travel_note_results = db.get_notes_list(1, 4)
             result_dict['recommend_travel_notes'] = travel_note_results
+            logger.info(result_dict)
             return HttpResponse(json.dumps(result_dict))
         else:
             raise Exception()
@@ -66,19 +66,16 @@ def get_tag(scene_name):
         db.close()
 
 def check_search_word(search_word):
-    pattern = '[^\u4e00-\u9fa5]'
-    match = re.search(pattern, search_word)
-    if match:
-        return 'chi'
-    pattern = '^[a-zA-Z]+$'
-    match = re.search(pattern, search_word)
+    print search_word
+    pattern = u'[a-zA-Z]+$'
+    match = re.match(pattern, search_word)
     if match:
         return 'eng'
-    pattern = '^\u0E00-\u0E7F]'
-    match = re.search(pattern, search_word)
+    pattern = u'[\u4e00-\u9fa5]'
+    match = re.match(pattern, search_word)
     if match:
-        return 'thai'
-    return 'chi'
+        return 'chi'
+    return 'thai'
 
 def get_eng_tag(comments):
     for comment in comments:
@@ -150,8 +147,10 @@ def search(request):
             result['recommend_scene'] = temp_result['recommend_scene']
             return HttpResponse(json.dumps(result))
         elif status == 0:
+
             temp_result = db.get_small_scene_content(search_word)
-            temp_result['picture'] = temp_result['picture'].split(';')
+            if temp_result['picture']:
+                temp_result['picture'] = temp_result['picture'].split(';')
 
             return HttpResponse(json.dumps(temp_result))
         else:
@@ -172,7 +171,7 @@ def get_scene_list(request):
     try:
         if request.method == 'GET':
             scene_name = request.GET['scene_name']
-            offset = request.GET['offset']
+            offset = request.REQUEST.get('offset', '1')
         if scene_name == None or offset == None:
             raise Exception
         temp_result = db.get_scene_list(scene_name, int(offset))
@@ -182,7 +181,7 @@ def get_scene_list(request):
             t['chi_score'] = scores[0]
             t['eng_score'] = scores[1]
             t['thai_score'] = scores[2]
-        return HttpResponse(temp_result)
+        return HttpResponse(json.dumps(temp_result))
 
     except Exception as e:
         return HttpResponse('404 NOT FOUND!!')

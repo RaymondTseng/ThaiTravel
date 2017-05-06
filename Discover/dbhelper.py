@@ -49,6 +49,7 @@ class DBHelper:
         return None
 
     def search_note(self, search_word):
+        logger.info(search_word)
         sql = "select id,title,author,time,picture from chi_travel_notes where title like '%" + search_word + "%' limit 32"
         self.cur.execute(sql)
         results = self.cur.fetchall()
