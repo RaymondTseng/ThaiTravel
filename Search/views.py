@@ -45,7 +45,8 @@ def home(request):
         print e.message
         return HttpResponse('404 Not Found!!')
 
-
+def test(request):
+    return HttpResponse('404 Not Found!!')
 #获得中泰英key words
 def get_tag(scene_name):
     db = None
@@ -149,6 +150,7 @@ def search(request):
             temp_result = db.get_small_scene_content(search_word)
             if temp_result['picture']:
                 temp_result['picture'] = temp_result['picture'].split(';')
+
             return HttpResponse(json.dumps(temp_result))
         else:
             raise Exception()

@@ -169,13 +169,15 @@ class DBHelper:
                 colors_ditc = {}
                 colors_ditc['-2'] = '#B22222'
                 colors_ditc['-1'] = '#ec5845'
-                colors_ditc['0'] = '#FFFFFF'
+                colors_ditc['0'] = '#C0C0C0'
                 colors_ditc['1'] = '#46d185'
                 colors_ditc['2'] = '#00a69d'
                 for word, count in n_words[key].iteritems():
+                    word = word.decode('unicode-escape')
+                    logger.info(sentiment_words)
                     if sentiment_words.has_key(word):
                         temp = {}
-                        colors.append(sentiment_words[word])
+                        colors.append(str(sentiment_words[word]))
                         temp['name'] = word
                         temp['value'] = count
                         data.append(temp)
@@ -387,7 +389,7 @@ class DBHelper:
                 if temp.has_key('adj'):
                     adj_words = temp['adj']
                     for key, value in adj_words.iteritems():
-                        words.append(key)
+                        words.append(key.decode('unicode-escape'))
                         values.append(str('%.2f' % (float(value) * 100)) + '%')
         return words, values
 

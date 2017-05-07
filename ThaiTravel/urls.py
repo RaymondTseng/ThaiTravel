@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'search/get_translate', search_view.get_translation, name='get_translation'),
     url(r'person/login', person_view.login, name='login'),
     url(r'person/register', person_view.register, name='register'),
+    url(r'search/test', search_view.test, name='test'),
     # url(r'^hello/', search_view.hello, name='search_hello'),
     url(r'^static/(?P<path>.*)$','django.views.static.serve',{'document_root':settings.STATIC_URL}),
 ]
