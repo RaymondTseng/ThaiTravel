@@ -32,7 +32,6 @@ class DBHelper:
         sql = 'select ifset from chi_scene where scene_name = %s' % '"' + word  + '"'
         self.cur.execute(sql)
         result = self.cur.fetchall()
-        logger.info(result)
         if result:
             return result[0]['ifset'], word
         else:
@@ -53,6 +52,8 @@ class DBHelper:
         indices_list = ', '.join((map(lambda x: '%s', indices[start_index:end_index])))
         self.cur.execute(sql % indices_list, indices[start_index:end_index])
         new_result = self.cur.fetchall()
+        # for result in new_result:
+        #     result['score'] = [float(s) for s in result['score'].split(',')]
         return new_result
 
     '''
@@ -63,7 +64,6 @@ class DBHelper:
         self.cur.execute(sql)
         temp_result = self.cur.fetchall()
         result = temp_result[0]
-        logger.info(result)
         scores = result['score'].split(',')
         count = 0
         total_score = 0
@@ -122,7 +122,6 @@ class DBHelper:
         result = temp_result[0]
         if len(result['introduction']) > 800:
             result['introduction'] = result['introduction'][:800] + '...'
-            logger.info(result['introduction'][:800])
         result['recommend_scene'] = self.get_recommend_scene_list(scene_name)
         return result
 
@@ -160,18 +159,19 @@ class DBHelper:
                         n_words[key] = tag_dict['nnn']
             table = key + '_sentiment_score'
             sql = 'select score from %s where location like %s' % (table, '"%' + value + '"')
+            self.cur.execute(sql)
             result = self.cur.fetchall()
-            if result:
+            if result and n_words.has_key(key):
                 sentiment[key] = {}
                 sentiment_words = json.loads(str(result[0]['score']))
                 colors = []
                 data = []
                 colors_ditc = {}
-                colors_ditc['-2'] = '#FF0000'
-                colors_ditc['-1'] = '#F08080'
+                colors_ditc['-2'] = '#B22222'
+                colors_ditc['-1'] = '#ec5845'
                 colors_ditc['0'] = '#FFFFFF'
-                colors_ditc['1'] = '#00FF00'
-                colors_ditc['2'] = '#006400'
+                colors_ditc['1'] = '#46d185'
+                colors_ditc['2'] = '#00a69d'
                 for word, count in n_words[key].iteritems():
                     if sentiment_words.has_key(word):
                         temp = {}
@@ -188,10 +188,12 @@ class DBHelper:
                     colors[index] = colors_ditc[color]
                 sentiment[key]['color'] = colors
         result = {}
-        result['pie'] = sentiment
-        result['bar'] = {}
-        result['bar']['top_words'] = top_words
-        result['bar']['score'] = top_words_score
+        if sentiment:
+            result['pie'] = sentiment
+        if top_words and top_words_score:
+            result['bar'] = {}
+            result['bar']['top_words'] = top_words
+            result['bar']['score'] = top_words_score
         return result
 
     '''
@@ -217,7 +219,10 @@ class DBHelper:
             indices = self.sort_recommend_scene_list(indices)
         result = []
         for index in indices:
-            result.append(self.get_scene_summary_by_index(int(index)))
+            if index:
+                result.append(self.get_scene_summary_by_index(int(index)))
+        for res in result:
+            res['score'] = [float(s) for s in res['score'].split(',')]
         return result
 
     '''
@@ -286,7 +291,6 @@ class DBHelper:
         sql = 'select id from %s where location like %s' % (table, '"%' + scene_name + '%"')
         self.cur.execute(sql)
         result = self.cur.fetchall()
-        logger.info(result)
         indices = []
         if result:
             for i in result:
@@ -357,13 +361,16 @@ class DBHelper:
                 result_dict['url'] = result[0]
         if index == 0:
             words, values = self.get_adj_words(scene_name, lang)
+            result_dict['adj_words'] = {}
             if words and values:
-                result_dict['adj_words'] = {}
                 result_dict['adj_words']['words'] = words
                 result_dict['adj_words']['values'] = values
-        result_dict['comments'] = result_set
-        result_dict['max_comments_num'] = len(indices)/ 5
-        result_dict['lang'] = lang
+            else:
+                result_dict['adj_words'] = '暂无标签'
+        if result_set:
+            result_dict['comments'] = result_set
+            result_dict['max_comments_num'] = len(indices)/ 5
+            result_dict['lang'] = lang
         return result_dict
 
     def get_adj_words(self, scene_name, lang):
@@ -381,28 +388,25 @@ class DBHelper:
                     adj_words = temp['adj']
                     for key, value in adj_words.iteritems():
                         words.append(key)
-                        values.append(value)
+                        values.append(str('%.2f' % (float(value) * 100)) + '%')
         return words, values
 
     def get_score(self, scene_name):
         sql = 'select score from chi_scene where scene_name like %s' % "'%" + scene_name + "%'"
-        logger.info(sql)
         self.cur.execute(sql)
         results = self.cur.fetchall()
-        logger.info(results)
         return results[0]
 
     def get_hot_search(self, index, page_size):
         start_index = (index - 1) * page_size
         end_index = index * page_size
-        sql = 'select * from chi_scene where length(indices) > 200 and ' \
+        sql = 'select * from chi_scene where length(indices) > 100 and ' \
               'ifset = 0 and picture is not null order by length(indices) desc'
         self.cur.execute(sql)
         results = self.cur.fetchall()
         new_results = []
         for result in results:
             scores = result['score'].split(',')
-            logger.info(scores)
             for score in scores:
                 if score == "0":
                     break

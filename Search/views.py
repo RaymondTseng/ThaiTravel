@@ -38,7 +38,6 @@ def home(request):
             result_dict['hot_location'] = hot_locations
             travel_note_results = db.get_notes_list(1, 4)
             result_dict['recommend_travel_notes'] = travel_note_results
-            logger.info(result_dict)
             return HttpResponse(json.dumps(result_dict))
         else:
             raise Exception()
@@ -110,7 +109,7 @@ def get_scene_comments(request):
             offset = request.REQUEST.get('offset', '0')
             lang = request.REQUEST.get('lang', 'chi')
         comments = db.get_scene_comments(scene_name, int(offset), lang)
-        return HttpResponse(json.dumps(comments), content_type='application/json')
+        return HttpResponse(json.dumps(comments))
     except Exception as e:
         return HttpResponse('404 NOT FOUND!!')
     finally:
@@ -147,11 +146,9 @@ def search(request):
             result['recommend_scene'] = temp_result['recommend_scene']
             return HttpResponse(json.dumps(result))
         elif status == 0:
-
             temp_result = db.get_small_scene_content(search_word)
             if temp_result['picture']:
                 temp_result['picture'] = temp_result['picture'].split(';')
-
             return HttpResponse(json.dumps(temp_result))
         else:
             raise Exception()
@@ -175,6 +172,7 @@ def get_scene_list(request):
         if scene_name == None or offset == None:
             raise Exception
         temp_result = db.get_scene_list(scene_name, int(offset))
+
         for t in temp_result:
             t['picture'] = t['picture'].split(';')[0]
             scores = t['score'].split(',')
@@ -200,7 +198,6 @@ def recommend_hot_search(request):
             # content['titleSrc'] = '../search/search?scene=' + result['scene_name']
             content['scene_name'] = result['scene_name']
             scores = db.get_score(result['scene_name'])
-            logger.info(scores['score'])
             scores = scores['score'].split(',')
             content['chi_score'] = scores[0] if scores[0] else 0
             content['eng_score'] = scores[1] if scores[1] else 0
@@ -224,7 +221,6 @@ def hot_search(request):
             # content['titleSrc'] = '../search/search?scene=' + result['scene_name']
             content['scene_name'] = result['scene_name']
             scores = db.get_score(result['scene_name'])
-            logger.info(scores['score'])
             scores = scores['score'].split(',')
             content['chi_score'] = scores[0] if scores[0] else 0
             content['eng_score'] = scores[1] if scores[1] else 0
@@ -242,7 +238,6 @@ def get_translation(request):
         index = request.GET.get('index')
         lang = request.GET.get('lang')
         result = db.get_single_scene_comments(scene_name, index, lang)
-        logger.info(result)
         return HttpResponse(json.dumps(result))
     except Exception as e:
         logger.error(e.message)
