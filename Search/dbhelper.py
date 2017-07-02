@@ -174,7 +174,6 @@ class DBHelper:
                 colors_ditc['2'] = '#00a69d'
                 for word, count in n_words[key].iteritems():
                     word = word.decode('unicode-escape')
-                    logger.info(sentiment_words)
                     if sentiment_words.has_key(word):
                         temp = {}
                         colors.append(str(sentiment_words[word]))
@@ -306,7 +305,11 @@ class DBHelper:
         result = self.cur.fetchall()
         if result:
             result = result[0]
-            result['content'] = translate.translate(result['content'])
+            temp = result['content']
+            result['content'] = {}
+            result['content']['chi'] = translate.translate(temp, 'zh')
+            if lang == 'thai':
+                result['content']['eng'] = translate.translate(temp, 'en')
         return result
 
     '''

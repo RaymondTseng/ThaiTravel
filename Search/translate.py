@@ -8,8 +8,8 @@ import json
 import logging
 logger = logging.getLogger('mylogger')
 
-appid = '20170504000046408'
-secretKey = 'KHOCq9HrtMKmDPL0N0uk'
+appid = '20161216000034159'
+secretKey = '3xQ9v0jfU6eSatyh17aM'
 
 httpClient = None
 myurl = '/api/trans/vip/translate'
@@ -18,7 +18,7 @@ toLang = 'zh'
 salt = random.randint(32768, 65536)
 
 
-def translate(word):
+def translate(word, toLang):
     logger.info(word)
     sign = (appid + word + str(salt) + secretKey).encode('utf8')
     m1 = md5.new()

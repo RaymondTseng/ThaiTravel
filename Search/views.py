@@ -43,10 +43,10 @@ def home(request):
             raise Exception()
     except Exception as e:
         print e.message
-        return HttpResponse('404 Not Found!!')
+        return HttpResponse('404 NOT FOUND!!')
 
 def test(request):
-    return HttpResponse('404 Not Found!!')
+    return HttpResponse('404 NOT FOUND!!')
 #获得中泰英key words
 def get_tag(scene_name):
     db = None
@@ -208,7 +208,7 @@ def recommend_hot_search(request):
         return HttpResponse(json.dumps(result_content))
     except Exception as e:
         print e.message
-        return HttpResponse('404 Not Found!')
+        return HttpResponse('404 NOT FOUND!!')
 
 def hot_search(request):
     db = None
@@ -230,7 +230,7 @@ def hot_search(request):
             result_content.append(json.dumps(content))
         return HttpResponse(json.dumps(result_content))
     except Exception as e:
-        return HttpResponse('404 Not Found!!')
+        return HttpResponse('404 NOT FOUND!!')
 
 
 def get_translation(request):

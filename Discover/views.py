@@ -27,13 +27,16 @@ def search_notes(request):
         else:
             # result = {}
             notes_result = db.search_note(search_word)
-            return HttpResponse(json.dumps(notes_result))
+            if notes_result:
+                return HttpResponse(json.dumps(notes_result))
+            else:
+                raise Exception()
             # result['search_word'] = search_word
             # result['content'] = notes_result
             # if result:
             #     return HttpResponse(json.dumps(result))
     except Exception as e:
-        return HttpResponse('404 Not Found!!')
+        return HttpResponse('404 NOT FOUND!!')
     finally:
         db.close()
 
@@ -57,7 +60,7 @@ def get_travel_note(request):
             else:
                 raise Exception()
     except Exception as e:
-        return HttpResponse('404 Not Found!!')
+        return HttpResponse('404 NOT FOUND!!')
     finally:
         db.close()
     # except Exception as e:
